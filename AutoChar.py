@@ -1541,6 +1541,9 @@ midset_list = [
 name = get_name(name_list, last_name_1, last_name_2, consonant_list, vowel_list, midset_list, cannot_end_name,
                 cannot_start_name)
 
+# When getting background, keep pulling paragraphs until you cannot anymore without passing 300 words. Each new
+# paragraph counts for 25 additional words as well. Minimum one paragraph.
+
 char_class = get_random_player_class(player_classes)
 char_level = get_random_level()
 char_subclass = char_class.pickSubclass(char_level)
