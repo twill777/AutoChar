@@ -902,17 +902,18 @@ class PlayerRace:
 
 
 class PlayerSubRace:
-    def __init__(self, parentClass, name, bonuses, languages, weapon_profs, other_profs, alignment_pref):
+    def __init__(self, parentRace, parentRaceIdx, name, bonuses, languages, weapon_profs, other_profs, alignment_pref):
         self.bonuses = []
-        for i in range(len(parentClass.bonuses)):
-            self.bonuses.append(parentClass.bonuses[i] + int(bonuses[i]))
-        self.bonuses = parentClass.bonuses
-        self.rand_bonuses = parentClass.rand_bonuses
+        for i in range(len(parentRace.bonuses)):
+            self.bonuses.append(parentRace.bonuses[i] + int(bonuses[i]))
+        self.bonuses = parentRace.bonuses
+        self.rand_bonuses = parentRace.rand_bonuses
         self.alignment_pref = alignment_pref
-        self.languages = parentClass.languages + languages
-        self.weapon_profs = parentClass.weapon_profs + weapon_profs
-        self.other_profs = parentClass.other_profs + other_profs
+        self.languages = parentRace.languages + languages
+        self.weapon_profs = parentRace.weapon_profs + weapon_profs
+        self.other_profs = parentRace.other_profs + other_profs
         self.name = name
+        self.parentRaceIdx = parentRaceIdx #index of parent race
 
 
 class PlayerBackground:
@@ -1167,7 +1168,10 @@ bard_subclasses = [
     PlayerSubClass(player_classes[1], 'Lore Bard', [], [], ['Any', 'Any', 'Any'], [],
                    [['Cutting Words', 3]], [['Additional Magic Secrets', 6], ['Peerless Skill', 14]]),
     PlayerSubClass(player_classes[1], 'Valor Bard', [], ['Martial Weapons'], [], ['Medium Armor', 'Shields'],
-                   [['Combat Inspiration', 3], ['Extra Attack', 6], ['Battle Magic', 14]], [])
+                   [['Combat Inspiration', 3], ['Extra Attack', 6], ['Battle Magic', 14]], []),
+    PlayerSubClass(player_classes[1], 'Eloquence Bard', [], [], [], [],
+                   [['Silver Tongue', 3], ['Unsettling Words', 3], ['Unfailing Inspiration', 6],
+                    ['Universal Speech', 6], ['Infectious Inspiration', 14]], [])
 ]
 player_classes[1].setSubclasses(bard_subclasses)
 
@@ -1340,30 +1344,21 @@ for i, row in df_races.iterrows():
 
 player_sub_races = []
 for i, row in df_subraces.iterrows():
-    player_sub_races.append(PlayerSubRace(player_races[row['Parent_class']], row['Name'], listString(row['Bonuses']),
+    player_sub_races.append(PlayerSubRace(player_races[row['Parent_race']], row['Parent_race'], row['Name'], listString(row['Bonuses']),
                                     listString(row['Languages']), listString(row['Weapon_profs']),
                                    listString(row['Other_profs']), listString(row['Alignment_pref'])))
 
-"""
-player_raceList = [[]]
+
+player_raceList = []
+for i in range(9):
+    player_raceList.append([])
 n = 0
 for subrace in player_sub_races:
-    player_raceList[row['Parent_class']].append(subrace)
+    player_raceList[subrace.parentRaceIdx].append(subrace)
     n = n + 1
 
-for i in range(8):
-    player_races[i].setSubraces(player_raceList[i])"""
-
-
-player_races[0].setSubraces([player_sub_races[16]])
-player_races[1].setSubraces([player_sub_races[0], player_sub_races[1], player_sub_races[2]])
-player_races[2].setSubraces([player_sub_races[3], player_sub_races[4], player_sub_races[5]])
-player_races[3].setSubraces([player_sub_races[6], player_sub_races[7], player_sub_races[8]])
-player_races[4].setSubraces([player_sub_races[12]])
-player_races[5].setSubraces([player_sub_races[13]])
-player_races[6].setSubraces([player_sub_races[9], player_sub_races[10], player_sub_races[11]])
-player_races[7].setSubraces([player_sub_races[14]])
-player_races[8].setSubraces([player_sub_races[15]])
+for i in range(9):
+    player_races[i].setSubraces(player_raceList[i])
 
 
 player_backgrounds = []
@@ -1541,30 +1536,33 @@ midset_list = [
 name = get_name(name_list, last_name_1, last_name_2, consonant_list, vowel_list, midset_list, cannot_end_name,
                 cannot_start_name)
 
+# FOR USED WITH TEXT GENERATION AI ex gpt3
 # When getting background, keep pulling paragraphs until you cannot anymore without passing 300 words. Each new
 # paragraph counts for 25 additional words as well. Minimum one paragraph.
 
-char_class = get_random_player_class(player_classes)
-char_level = get_random_level()
-char_subclass = char_class.pickSubclass(char_level)
-race = get_random_race(player_races).pickSubrace()
-background = get_random_background(player_backgrounds)
-alignment_num = get_alignment_num(race)
-alignment = get_alignment(alignment_num)
-prof_bonus = get_prof_bonus(char_level)
+#Loop for testing
+for i in range(1):
+    char_class = get_random_player_class(player_classes)
+    char_level = get_random_level() # Replace with an int for a given level
+    char_subclass = char_class.pickSubclass(char_level)
+    race = get_random_race(player_races).pickSubrace()
+    background = get_random_background(player_backgrounds)
+    alignment_num = get_alignment_num(race)
+    alignment = get_alignment(alignment_num)
+    prof_bonus = get_prof_bonus(char_level)
 
-stats = roll_stats(char_class, race)
-modifiers = get_modifier(stats)
+    stats = roll_stats(char_class, race)
+    modifiers = get_modifier(stats)
 
-saves = get_saves(char_class, prof_bonus, modifiers)
-save_prof_strings = get_save_profs(char_class)
-get_skill_profs(background, char_class, char_subclass)
-get_skill_modifiers(char_class, modifiers, prof_bonus)
+    saves = get_saves(char_class, prof_bonus, modifiers)
+    save_prof_strings = get_save_profs(char_class)
+    get_skill_profs(background, char_class, char_subclass)
+    get_skill_modifiers(char_class, modifiers, prof_bonus)
 
-languages = get_languages(race, char_class)
-weapon_profs = get_weapon_profs(char_class, race, background)
-other_profs = get_other_profs(char_class, background, race, artisan_tools, instruments, game_list)
-proficiencies_languages = get_all_profs_and_langs(languages, weapon_profs, other_profs)
+    languages = get_languages(race, char_class)
+    weapon_profs = get_weapon_profs(char_class, race, background)
+    other_profs = get_other_profs(char_class, background, race, artisan_tools, instruments, game_list)
+    proficiencies_languages = get_all_profs_and_langs(languages, weapon_profs, other_profs)
 
 [weapons, equipment] = get_weapons_and_equipment(char_class, weapon_profs, all_weapon_names)
 
